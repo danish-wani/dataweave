@@ -16,83 +16,128 @@ class ListProductsAPI(ListAPIView):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['category', 'brand', 'source', 'subcategory']
 
-    ORM = True
+    USE_ORM = False
 
     def get_queryset(self):
         """
 
         """
-        search = self.request.query_params.get('search')
-        min_discount = self.request.query_params.get('min_discount')
-        max_discount = self.request.query_params.get('max_discount')
+        search_text = self.request.query_params.get('search')
 
-        if self.ORM:
+        if self.USE_ORM:
 
-            return self.get_queryset_from_orm(search, min_discount, max_discount)
+            return self.get_queryset_from_orm(search_text)
 
-        return self.get_queryset_from_raw(search, min_discount, max_discount)
+        return self.get_queryset_from_raw(search_text)
 
     @staticmethod
-    def get_queryset_from_orm(search, min_discount, max_discount):
+    def get_queryset_from_orm(search):
         """
 
         """
-
-        condition = Q()
 
         if search:
             condition = Q(Q(title__icontains=search) | Q(sku__icontains=search))
-
-        if any([min_discount, max_discount]):
-            if min_discount and max_discount:
-                condition = condition & Q(discount__gte=min_discount, discount__lte=max_discount)
-
-            elif min_discount:
-                condition = condition & Q(discount__gte=min_discount)
-
-            elif max_discount:
-                condition = condition & Q(discount__lte=max_discount)
-
             return Product.objects.filter(condition)
 
         return Product.objects.all()
 
     @staticmethod
-    def get_queryset_from_raw(search, min_discount, max_discount):
+    def get_queryset_from_raw(search_text):
         """
 
         """
         sql_query = """
             SELECT * FROM products;
         """
-        params = list()
-        op = ""
 
-        if any([search, min_discount, max_discount]):
+        if search_text:
+            search_text = '%' + search_text + '%'
+
             sql_query = """
-                SELECT * FROM products WHERE 
+                SELECT * FROM products WHERE title like %s or sku like %s
             """
-            if search:
-                search_text = '%' + search + '%'
+            params = [search_text, search_text]
 
-                sql_query += """
-                    (title like %s or sku like %s)
-                """
-                params.extend([search_text, search_text])
+            queryset = Product.objects.raw(sql_query, params)
 
-                op = " and "
+            return queryset
 
-            if min_discount and max_discount:
-                sql_query += " {op} discount >= %s and discount <= %s".format(op=op)
-                params.extend([min_discount, max_discount])
+        return Product.objects.raw(sql_query)
 
-            elif min_discount:
-                sql_query += " {op} discount >= %s".format(op=op)
-                params.append(min_discount)
 
-            elif max_discount:
-                sql_query += " {op} discount <= %s".format(op=op)
-                params.append(max_discount)
+class ListProductsRawQueryAPI(ListAPIView):
+    serializer_class = ProductsSerializer
+    pagination_class = CustomPagination
+    filter_by_fields = ['category', 'brand', 'source', 'subcategory']
+
+    def get_queryset(self):
+        """
+
+        """
+        query_params = self.request.query_params
+
+        if any([query_params.get(field) for field in self.filter_by_fields]):
+            return self.get_filtered_queryset(query_params)
+
+        return self.get_queryset_from_raw(query_params)
+
+    def get_filtered_queryset(self, query_params):
+        """
+
+        """
+        params = list()
+        search_text = query_params.get('search')
+        field_value_pairs = dict()
+
+        for field in self.filter_by_fields:
+            if query_params.get(field):
+                field_value_pairs[field] = query_params.get(field)
+
+        sql_query = """
+            SELECT * FROM products WHERE
+        """
+        filter_query = str()
+
+        if search_text:
+            search_text = '%' + search_text + '%'
+
+            search_filter = """
+                (title like %s or sku like %s)
+            """
+            params = [search_text, search_text]
+            filter_query = search_filter + " and "
+
+        for field, value in field_value_pairs.items():
+            filter_query += field + " =%s and "
+            params.append(value)
+
+        filter_query = filter_query.strip().rstrip('and')
+
+        sql_query += filter_query
+
+        queryset = Product.objects.raw(sql_query, params)
+
+        return queryset
+
+    @staticmethod
+    def get_queryset_from_raw(query_params):
+        """
+
+        """
+        search_text = query_params.get('search')
+
+        sql_query = """
+            SELECT * FROM products;
+        """
+
+        if search_text:
+            search_text = '%' + search_text + '%'
+
+            sql_query = """
+                SELECT * FROM products WHERE title like %s or sku like %s
+            """
+            params = [search_text, search_text]
 
             queryset = Product.objects.raw(sql_query, params)
 
@@ -103,13 +148,13 @@ class ListProductsAPI(ListAPIView):
 
 class UpdateProductAPI(UpdateAPIView):
     serializer_class = ProductsSerializer
-    ORM = True
+    USE_ORM = True
 
     def get_queryset(self):
         """
 
         """
-        if self.ORM:
+        if self.USE_ORM:
             return Product.objects.all()
 
         sql_query = """
@@ -124,7 +169,7 @@ class UpdateProductAPI(UpdateAPIView):
         pk = self.kwargs.get('pk')
 
         if pk and Product.objects.filter(pk=pk).exists():
-            if self.ORM:
+            if self.USE_ORM:
                 return Product.objects.filter(pk=pk).last()
 
             sql_query = """
@@ -150,14 +195,14 @@ class DiscountProductBucketsAPI(APIView):
         'bucket_4': {'bucket': bucket_4, 'label': '30 - 50%'},
         'bucket_5': {'bucket': bucket_5, 'label': '> 50%'},
     }
-    ORM = True
+    USE_ORM = True
 
     def get(self, request, *args, **kwargs):
         """
 
         """
         try:
-            if self.ORM:
+            if self.USE_ORM:
                 data = self.get_result_from_orm()
 
             else:
