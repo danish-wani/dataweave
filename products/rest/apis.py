@@ -195,18 +195,93 @@ class DiscountProductBucketsAPI(APIView):
         'bucket_4': {'bucket': bucket_4, 'label': '30 - 50%'},
         'bucket_5': {'bucket': bucket_5, 'label': '> 50%'},
     }
-    USE_ORM = True
 
     def get(self, request, *args, **kwargs):
         """
 
         """
         try:
-            if self.USE_ORM:
-                data = self.get_result_from_orm()
+            data = self.get_result_from_orm()
 
-            else:
-                data = self.get_result_from_raw_query()
+            return Response(
+                data=data,
+                status=HTTP_200_OK
+            )
+        except Exception as e:
+
+            return Response(
+                data={'Error': e},
+                status=HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def get_result_from_orm(self):
+        """
+
+        """
+        for bucket, bucket_data in self.buckets.items():
+            values = bucket_data.get('bucket')
+
+            if values[0] is not None and values[1] is not None:
+                bucket_data.update(
+                    {
+                        'aggregate': Count('discount', filter=Q(discount__gte=values[0], discount__lte=values[1]))
+                    }
+                )
+
+            elif values[0] is None:
+                bucket_data.update(
+                    {
+                        'aggregate': Count('discount', filter=Q(discount=values[1]))
+                    }
+                )
+
+            elif values[1] is None:
+                bucket_data.update(
+                    {
+                        'aggregate': Count('discount', filter=Q(discount__gt=values[0]))
+                    }
+                )
+
+        query_result = Product.objects.aggregate(
+            bucket_1=self.buckets.get('bucket_1').get('aggregate'),
+            bucket_2=self.buckets.get('bucket_2').get('aggregate'),
+            bucket_3=self.buckets.get('bucket_3').get('aggregate'),
+            bucket_4=self.buckets.get('bucket_4').get('aggregate'),
+            bucket_5=self.buckets.get('bucket_5').get('aggregate')
+        )
+
+        data = dict()
+        for bucket, bucket_data in self.buckets.items():
+            data.update(
+                {
+                    bucket_data.get('label'): query_result.get(bucket, 0)
+                }
+            )
+
+        return data
+
+
+class DiscountProductBucketsRawQueryAPI(APIView):
+    bucket_1 = (None, 0)    # 0% discount
+    bucket_2 = (0, 10)      # 0 - 10% discount
+    bucket_3 = (10, 30)     # 10 - 30% discount
+    bucket_4 = (30, 50)     # 30 - 50% discount
+    bucket_5 = (50, None)   # > 50% discount
+
+    buckets = {
+        'bucket_1': {'bucket': bucket_1, 'label': '0%'},
+        'bucket_2': {'bucket': bucket_2, 'label': '0 - 10%'},
+        'bucket_3': {'bucket': bucket_3, 'label': '10 - 30%'},
+        'bucket_4': {'bucket': bucket_4, 'label': '30 - 50%'},
+        'bucket_5': {'bucket': bucket_5, 'label': '> 50%'},
+    }
+
+    def get(self, request, *args, **kwargs):
+        """
+
+        """
+        try:
+            data = self.get_result_from_raw_query()
 
             return Response(
                 data=data,
@@ -266,49 +341,3 @@ class DiscountProductBucketsAPI(APIView):
         sql_selection = sql_selection.strip().rstrip(',')
 
         return sql_selection, params
-
-    def get_result_from_orm(self):
-        """
-
-        """
-        for bucket, bucket_data in self.buckets.items():
-            values = bucket_data.get('bucket')
-
-            if values[0] is not None and values[1] is not None:
-                bucket_data.update(
-                    {
-                        'aggregate': Count('discount', filter=Q(discount__gte=values[0], discount__lte=values[1]))
-                    }
-                )
-
-            elif values[0] is None:
-                bucket_data.update(
-                    {
-                        'aggregate': Count('discount', filter=Q(discount=values[1]))
-                    }
-                )
-
-            elif values[1] is None:
-                bucket_data.update(
-                    {
-                        'aggregate': Count('discount', filter=Q(discount__gt=values[0]))
-                    }
-                )
-
-        query_result = Product.objects.aggregate(
-            bucket_1=self.buckets.get('bucket_1').get('aggregate'),
-            bucket_2=self.buckets.get('bucket_2').get('aggregate'),
-            bucket_3=self.buckets.get('bucket_3').get('aggregate'),
-            bucket_4=self.buckets.get('bucket_4').get('aggregate'),
-            bucket_5=self.buckets.get('bucket_5').get('aggregate')
-        )
-
-        data = dict()
-        for bucket, bucket_data in self.buckets.items():
-            data.update(
-                {
-                    bucket_data.get('label'): query_result.get(bucket, 0)
-                }
-            )
-
-        return data
