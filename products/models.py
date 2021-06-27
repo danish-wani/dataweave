@@ -26,6 +26,7 @@ class Product(models.Model):
 
     class Meta:
         db_table = 'products'
+        ordering = ('title', 'crawl_date')
 
     def __str__(self):
         """

@@ -16,19 +16,13 @@ class ListProductsAPI(ListAPIView):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['category', 'brand', 'source', 'subcategory']
 
-    USE_ORM = False
-
     def get_queryset(self):
         """
 
         """
         search_text = self.request.query_params.get('search')
 
-        if self.USE_ORM:
-
-            return self.get_queryset_from_orm(search_text)
-
-        return self.get_queryset_from_raw(search_text)
+        return self.get_queryset_from_orm(search_text)
 
     @staticmethod
     def get_queryset_from_orm(search):
@@ -41,29 +35,6 @@ class ListProductsAPI(ListAPIView):
             return Product.objects.filter(condition)
 
         return Product.objects.all()
-
-    @staticmethod
-    def get_queryset_from_raw(search_text):
-        """
-
-        """
-        sql_query = """
-            SELECT * FROM products;
-        """
-
-        if search_text:
-            search_text = '%' + search_text + '%'
-
-            sql_query = """
-                SELECT * FROM products WHERE title like %s or sku like %s
-            """
-            params = [search_text, search_text]
-
-            queryset = Product.objects.raw(sql_query, params)
-
-            return queryset
-
-        return Product.objects.raw(sql_query)
 
 
 class ListProductsRawQueryAPI(ListAPIView):
@@ -144,41 +115,6 @@ class ListProductsRawQueryAPI(ListAPIView):
             return queryset
 
         return Product.objects.raw(sql_query)
-
-
-class UpdateProductAPI(UpdateAPIView):
-    serializer_class = ProductsSerializer
-    USE_ORM = True
-
-    def get_queryset(self):
-        """
-
-        """
-        if self.USE_ORM:
-            return Product.objects.all()
-
-        sql_query = """
-            SELECT * FROM products;
-        """
-        return Product.objects.raw(sql_query)
-
-    def get_object(self):
-        """
-
-        """
-        pk = self.kwargs.get('pk')
-
-        if pk and Product.objects.filter(pk=pk).exists():
-            if self.USE_ORM:
-                return Product.objects.filter(pk=pk).last()
-
-            sql_query = """
-                SELECT * FROM products WHERE id=%s;
-            """
-
-            return Product.objects.raw(sql_query, [pk])
-
-        raise Http404
 
 
 class DiscountProductBucketsAPI(APIView):
@@ -341,3 +277,38 @@ class DiscountProductBucketsRawQueryAPI(APIView):
         sql_selection = sql_selection.strip().rstrip(',')
 
         return sql_selection, params
+
+
+class UpdateProductAPI(UpdateAPIView):
+    serializer_class = ProductsSerializer
+    USE_ORM = True
+
+    def get_queryset(self):
+        """
+
+        """
+        if self.USE_ORM:
+            return Product.objects.all()
+
+        sql_query = """
+            SELECT * FROM products;
+        """
+        return Product.objects.raw(sql_query)
+
+    def get_object(self):
+        """
+
+        """
+        pk = self.kwargs.get('pk')
+
+        if pk and Product.objects.filter(pk=pk).exists():
+            if self.USE_ORM:
+                return Product.objects.filter(pk=pk).last()
+
+            sql_query = """
+                SELECT * FROM products WHERE id=%s;
+            """
+
+            return Product.objects.raw(sql_query, [pk])
+
+        raise Http404
