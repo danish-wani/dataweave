@@ -23,9 +23,9 @@ BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
 SECRET_KEY = 'ujj=h&=x*(c@(o2189rv6)iln_(%gepcae_v*3)5q=&7m9!g5k'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1']
 
 
 # Application definition
@@ -126,6 +126,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
+
+STATIC_ROOT = Path.joinpath(BASE_DIR, "static")
+MEDIA_ROOT = Path.joinpath(BASE_DIR, "media")
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
