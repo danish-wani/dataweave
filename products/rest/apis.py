@@ -1,5 +1,6 @@
+from django.http import Http404
 from django.db.models import Q
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, UpdateAPIView
 from django_filters.rest_framework import DjangoFilterBackend
 from .serializers import ProductsSerializer
 from products.models import Product
@@ -55,4 +56,39 @@ class ListProductsAPI(ListAPIView):
 
             return Product.objects.raw(sql_query, [search_text, search_text])
 
-        return Product.objects.raw(sql_query, [])
+        return Product.objects.raw(sql_query)
+
+
+class UpdateProductAPI(UpdateAPIView):
+    serializer_class = ProductsSerializer
+    ORM = True
+
+    def get_queryset(self):
+        """
+
+        """
+        if self.ORM:
+            return Product.objects.all()
+
+        sql_query = """
+            SELECT * FROM products;
+        """
+        return Product.objects.raw(sql_query)
+
+    def get_object(self):
+        """
+
+        """
+        pk = self.kwargs.get('pk')
+
+        if pk and Product.objects.filter(pk=pk).exists():
+            if self.ORM:
+                return Product.objects.get(pk=pk)
+
+            sql_query = """
+                SELECT * FROM products WHERE id=%s;
+            """
+
+            return Product.objects.raw(sql_query, [pk])
+
+        raise Http404
