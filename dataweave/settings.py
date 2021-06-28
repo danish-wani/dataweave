@@ -82,10 +82,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'dataweave',
-        'USER': 'root',
-        'PASSWORD': 'root',
-        'HOST': '',
-        'PORT': '',
+        'USER': config('DB_USER', 'root'),
+        'PASSWORD': config('DB_USER', 'root'),
+        'HOST': config('DB_HOST', ''),
+        'PORT': config('DB_PORT', ''),
     }
 }
 
