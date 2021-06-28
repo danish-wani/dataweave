@@ -81,7 +81,7 @@ WSGI_APPLICATION = 'dataweave.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'dataweave',
+        'NAME': config('DB_NAME', 'dataweave'),
         'USER': config('DB_USER', 'root'),
         'PASSWORD': config('DB_USER', 'root'),
         'HOST': config('DB_HOST', ''),

@@ -234,11 +234,11 @@ class DiscountProductBucketsRawQueryAPI(APIView):
         """
             Generates SQL query
 
-            `select  id ,  sum(if(discount=0, 1, 0)) as bucket_1,
-            sum(if(discount>=0 and discount<=10, 1, 0)) as bucket_2,
-            sum(if(discount>=10 and discount<=30, 1, 0)) as bucket_3,
-            sum(if(discount>=30 and discount<=50, 1, 0)) as bucket_4,
-            sum(if(discount>50, 1, 0)) as bucket_5 from products;`
+            `SELECT  id , SUM(IF(discount=0, 1, 0)) AS bucket_1,
+            SUM(IF(discount>=0 and discount<=10, 1, 0)) AS bucket_2,
+            SUM(IF(discount>=10 and discount<=30, 1, 0)) AS bucket_3,
+            SUM(IF(discount>=30 and discount<=50, 1, 0)) AS bucket_4,
+            SUM(IF(discount>50, 1, 0)) AS bucket_5 FROM products;`
 
         """
         sql_selection, params = self.get_sql_if_functions()
