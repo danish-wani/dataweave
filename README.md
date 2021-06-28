@@ -135,6 +135,9 @@ Install dataweave project
   # if you are using MySQL
   mysql -u <username> -p <password>  <database_name>  <  <sql_file>
 
+  # Add the below variable in mysql conf under [mysqld]
+  sql_mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+  sudo service mysql restart
   
   # run tests
   python manage.py test
