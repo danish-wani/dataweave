@@ -76,7 +76,7 @@ Products listing, searching, filtering and discount bucket APIs.
   
 ## Optimizations
 
-Firstly I haved added pagination to all GET queries, records per page are set to 10 only.
+To start with I have added pagination to all GET queries, records per page are set to 10 only.
 
 For discount-buckets API, the raw SQL query is optimized and uses only a single query to fetch the count of all discount buckets.
 
@@ -87,7 +87,7 @@ SUM(IF(discount>50, 1, 0)) AS bucket_5 FROM products;`
 I have used SQL **IF function** for getting the counts of different discount buckets in a single query.
 
 
-Also the **ORM** for the above use the ORM aggregation to fetch the count in a single ORM query
+Also the **ORM** for the above uses the aggregation to fetch the count in a single ORM query
 ## Environment Variables
 
 You can optionally add env variable in the .env file and define the following Variables in there;
